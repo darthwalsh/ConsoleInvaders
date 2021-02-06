@@ -5,6 +5,7 @@ class Program {
   static int Main() {
     try {
       Application.Run<GameView>();
+      Application.Driver.End();
       return 0;
     } catch (Exception e) {
       Application.Driver.End();
@@ -13,8 +14,6 @@ class Program {
       Console.Error.WriteLine(e);
       Console.Error.Flush();
       return 1;
-    } finally {
-      Application.Driver.End();
     }
   }
 }

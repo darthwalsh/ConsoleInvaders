@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
+using System.IO;
 using Terminal.Gui;
+using GuiAttribute = Terminal.Gui.Attribute;
 
-sealed class GameView : Toplevel, ISupportInitialize, IDrawGame {
+sealed class GameView : Toplevel, ISupportInitialize {
   int count;
   KeyPlayer player;
   World world;
@@ -13,39 +13,18 @@ sealed class GameView : Toplevel, ISupportInitialize, IDrawGame {
     player = new KeyPlayer();
     world = new World(player);
   }
-  Dictionary<object, Label> labels = new Dictionary<object, Label>();
 
   void ISupportInitialize.BeginInit() {
-    var fps = TimeSpan.FromSeconds(1) / 60;
+    const int fps = 60;
     // Don't need to remove the returned token 
-    Application.MainLoop.AddTimeout(fps, Update);
-
-
-    // var label = new Label("Hello World") {
-    //   X = Pos.Center(),
-    //   Y = Pos.Center(),
-    //   Height = 1,
-    // };
-    // Add(label);
-
-    var label = GetLabel(new object());
-    label.Text = "=^=";
-    label.X = Pos.Center();
-    label.Y = Pos.Center();
-    label.Height = 1;
-
-    Add(label);
-
+    Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(1) / fps, Update);
   }
 
   bool Update(MainLoop loop) {
     ++count;
 
-    var l = Subviews.Single();
-    l.Text = "Count" + count;
-
-    // world.Update();
-    // world.Draw(this);
+    world.Update();
+    Draw();
 
     bool keepGoing = true;
     return keepGoing;
@@ -91,42 +70,31 @@ sealed class GameView : Toplevel, ISupportInitialize, IDrawGame {
     public bool Fire { get; set; }
   }
 
-  public void Draw(Ship ship) {
-    var label = GetLabel(ship);
-    label.Text = "=^=";
-    label.X = ship.X;
-    label.Y = ship.Y;
-    label.Height = 1;
+  void Draw() {
+    RemoveAll();
+    Add(Draw(world.Ship));
   }
 
-  Label GetLabel(Object o) {
-    if (labels.TryGetValue(o, out var label)) return label;
-    label = new Label();
-    labels[o] = label;
-    Add(label);
-    return label;
-  }
+  View Draw(Ship ship) => new Label(
+      ship.X,
+      ship.Y,
+      "=^=") {
+        Height = 1,
+        ColorScheme = new ColorScheme { Normal = GuiAttribute.Make(Color.Green, Color.Black) },
+      };
 }
 
 sealed class World {
-  Ship ship;
+  public Ship Ship { get; private set; }
 
   public World(IPlayer player) {
-    ship = new Ship(player);
+    Ship = new Ship(player);
   }
 
   public void Update() {
-
-  }
-
-  public void Draw(IDrawGame drawer) {
-    drawer.Draw(ship);
+    Ship.Update();
   }
 }
-
-interface IDrawGame {
-  void Draw(Ship ship);
-} 
 
 interface IPlayer {
   bool Up { get; }
@@ -141,6 +109,13 @@ sealed class Ship {
   public Ship(IPlayer player) {
     this.player = player;
   }
-  public int X => 2;
-  public int Y => 3;
+  public int X { get; set; }
+  public int Y { get; set; }
+
+  public void Update() {
+    if (this.player.Left) --X;
+    if (this.player.Right) ++X;
+    if (this.player.Up) --Y;
+    if (this.player.Down) ++Y;
+  }
 }
