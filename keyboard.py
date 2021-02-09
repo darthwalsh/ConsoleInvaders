@@ -2,8 +2,8 @@ import threading
 from pynput import keyboard
 
 class Keyboard():
-  def __init__(self, on_quit):
-    self.on_quit = on_quit
+  def __init__(self):
+    self.stop = False
     self.lock = threading.Lock()
     self.pressed = set()
 
@@ -16,7 +16,7 @@ class Keyboard():
       self.pressed.remove(key)
 
     if key == keyboard.Key.esc:
-      self.on_quit()
+      self.stop = True
 
   def left(self):
     with self.lock:
@@ -39,13 +39,10 @@ class Keyboard():
       return keyboard.Key.shift in self.pressed
 
   def __enter__(self):
-    self.listener = keyboard.Listener(
-        on_press=self.on_press,
-        on_release=self.on_release)
+    self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
     self.listener.start()
 
     return self
 
   def __exit__(self, type, value, traceback):
     self.listener.stop()
-

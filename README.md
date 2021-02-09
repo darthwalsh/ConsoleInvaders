@@ -14,14 +14,18 @@ pip install -r requirements.txt
 
 ## Play
 
-Run `python3 ./app.py`.
+Run `python3 app.py`.
 
 Arrow keys to move, left shift to shoot, ESC to quit.
 
 ## Platform setup
 
+### Windows
+
+To fix `No module named '_curses'` run `pip install windows-curses`.
+
 ### MacOS
 
-In order to detect keyboard state, your terminal needs [Input Monitoring](https://support.apple.com/guide/mac-help/control-access-to-input-monitoring-on-mac-mchl4cedafb6/mac) permission.
+In order to [detect keyboard state](https://pynput.readthedocs.io/en/latest/limitations.html), your terminal needs [Input Monitoring](https://support.apple.com/guide/mac-help/control-access-to-input-monitoring-on-mac-mchl4cedafb6/mac) permission.
 
 For some reason, when using iTerm2 the keyboard state doesn't work if iTerm2 is selected. Click to focus a different app, or use a different terminal.

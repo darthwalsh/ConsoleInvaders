@@ -4,13 +4,16 @@ class Console:
   def draw(self, world):
     self.screen.clear()
 
-    self.screen.addch(world, 1, '^')
+    self.draw_pos(world.ship, 'W')
 
     self.screen.refresh()
 
+  def draw_pos(self, p, c):
+    self.screen.addch(p.y, p.x, c)
+
   def __enter__(self):
-    self.screen = curses.initscr() 
-    
+    self.screen = curses.initscr()
+
     curses.noecho()
     curses.cbreak()
     curses.curs_set(0)
