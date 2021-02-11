@@ -25,13 +25,11 @@ class Game:
       time.sleep(0.1)
 
   def update(self):
-    # TODO handle the outer bounds first checking curses.is_term_resized
-
     if self.ship.x > 0 and self.controls.left():
       self.ship.x -= 1
-    if self.controls.right():
+    if self.ship.x < self.display.cols - 1 and self.controls.right():
       self.ship.x += 1
     if self.ship.y > 0 and self.controls.up():
       self.ship.y -= 1
-    if self.controls.down():
+    if self.ship.y < self.display.rows - 1 and self.controls.down():
       self.ship.y += 1

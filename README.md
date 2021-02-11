@@ -24,6 +24,8 @@ Arrow keys to move, left shift to shoot, ESC to quit.
 
 To fix `No module named '_curses'` run `pip install windows-curses`.
 
+The Windows Terminal doesn't seem to handle resizing well: microsoft/terminal#5094 
+
 ### MacOS
 
 In order to [detect keyboard state](https://pynput.readthedocs.io/en/latest/limitations.html), your terminal needs [Input Monitoring](https://support.apple.com/guide/mac-help/control-access-to-input-monitoring-on-mac-mchl4cedafb6/mac) permission.
