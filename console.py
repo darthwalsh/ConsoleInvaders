@@ -18,7 +18,10 @@ class Console:
       curses.resizeterm(self.rows, self.cols)
 
   def draw_pos(self, p, c):
-    self.screen.addch(p.y, p.x, c)
+    if 0 <= p.y < self.rows and 0 <= p.x < self.cols:
+      self.screen.addch(p.y, p.x, c)
+    else:
+      raise ValueError(f"{p} is out of bounds {self.rows},{self.cols}")
 
   def __enter__(self):
     self.screen = curses.initscr()
