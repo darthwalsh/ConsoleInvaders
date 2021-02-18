@@ -8,6 +8,9 @@ class Console:
 
     self.draw_pos(world.ship, 'W')
 
+    for b in world.bullets:
+      self.draw_pos(b, '^')
+
     if self.debug:
       self.screen.addstr(0, 0, f'h{self.cols}')
       self.screen.addstr(0, 3, f'w{self.rows}')

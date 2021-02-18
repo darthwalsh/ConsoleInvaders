@@ -6,6 +6,10 @@ class Pos:
     self.y = 0
     self.dx = 0
     self.dy = 0
+
+  def update(self):
+    self.x += self.dx
+    self.y += self.dy
   
   def __repr__(self):
     xy = f"{self.x},{self.y}"
@@ -20,6 +24,9 @@ class Game:
     self.over = False
 
     self.ship = Pos()
+    self.ship.x = display.cols // 2
+    self.ship.y = 3 * display.rows // 4
+    self.bullets: list[Pos] = []
 
   def on_quit(self):
     self.over = True
@@ -28,10 +35,14 @@ class Game:
     while not self.controls.stop:
       self.update()
       self.display.draw(self)
-      time.sleep(0.1)
+      try:
+        time.sleep(0.1)
+      except KeyboardInterrupt:
+        break
 
   def update(self):
     self.updateShip()
+    self.updateBullets()
 
   def updateShip(self):
     if self.controls.left():
@@ -46,3 +57,16 @@ class Game:
     # Clamping necessary if display dims changed to exclude ship
     self.ship.x = sorted((0, self.ship.x, self.display.cols - 1))[1]
     self.ship.y = sorted((0, self.ship.y, self.display.rows - 1))[1]
+
+  def updateBullets(self):
+    if self.controls.fire():
+      shot = Pos()
+      shot.x = self.ship.x
+      shot.y = self.ship.y
+      shot.dy = -1
+      self.bullets.append(shot)
+
+    for b in self.bullets:
+      b.update()
+
+    self.bullets[:] = [b for b in self.bullets if b.y >= 0]
