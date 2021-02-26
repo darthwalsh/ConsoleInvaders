@@ -8,6 +8,9 @@ class Console:
 
     self.draw_pos(world.ship, 'W')
 
+    for b in world.all_bunkers:
+      self.draw_pos(b, str(b.bunk.health))
+
     for b in world.bullets:
       self.draw_pos(b, '^')
 
