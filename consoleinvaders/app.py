@@ -1,6 +1,6 @@
-from console import Console
-from keyboard import Keyboard
-from game import Game
+from .console import Console
+from .keyboard import Keyboard
+from .game import Game
 
 def main():
   with Console() as console:

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "consoleinvaders"
+requires = [
+    "pynput >= 1.7.2",
+    "windows-curses >= 1.0;platform_system=='Windows'",
+]
+author = "Carl Walsh"
+author-email = "carl@carlwa.com"
+home-page = "https://github.com/darthwalsh/ConsoleInvaders"
+classifiers = [ "License :: OSI Approved :: MIT License",]
+description-file = "README.md"
+
+[tool.flit.scripts]
+consoleinvaders = "consoleinvaders.app:main"
