@@ -1,7 +1,10 @@
 import time
+from enum import Enum
 
+FPS = 60
 INITIAL_HEALTH = 9
-SHOT_COOLDOWN = 3
+SHOT_COOLDOWN = 6
+ENEMY_MOVE_COOLDOWN = 2
 
 class Pos:
   def __init__(self, x=0, y=0):
@@ -20,6 +23,12 @@ class Pos:
       return f"{xy} + {self.dx},{self.dy}"
     return xy
 
+class EnemyState(Enum):
+  RIGHT = 1
+  AT_RIGHT_DOWN = 2
+  LEFT = 3
+  AT_LEFT_DOWN = 4
+
 class Game:
   def __init__(self, display, controls):
     self.display = display
@@ -33,6 +42,15 @@ class Game:
     for b in self.bunkers:
       b.health = INITIAL_HEALTH
 
+    self.enemies: list[Pos] = [Pos(x, y)
+      for x in range(0, self.display.cols - 4, 8)
+      for y in range(0, self.ship_min_y() - 2, 6)]
+    for e in self.enemies:
+      e.dead = False
+      e.dx = 1
+    self.enemy_move_cooldown = 0
+    self.enemyState = EnemyState.RIGHT
+
     self.bullets: list[Pos] = []
 
   def ship_min_y(self):
@@ -45,18 +63,22 @@ class Game:
     self.over = True
 
   def run(self):
-    while not self.controls.stop:
+    while not self.controls.stop and not self.over:
       self.update()
       self.display.draw(self)
       try:
-        time.sleep(0.1)
+        time.sleep(1 / FPS)
       except KeyboardInterrupt:
         break
 
   def update(self):
     self.updateShip()
     self.updateBunkers()
+    self.updateEnemies()
     self.updateBullets()
+
+    if not self.enemies:
+      self.over = True
 
   def updateShip(self):
     if self.controls.left():
@@ -87,6 +109,53 @@ class Game:
         p.bunk = bunker
         self.all_bunkers.append(p)
 
+  def updateEnemies(self):
+    dx, dy = self.enemies[0].dx, self.enemies[0].dy
+
+    if self.enemy_move_cooldown:
+      self.enemy_move_cooldown -= 1
+    else:
+      self.enemy_move_cooldown = ENEMY_MOVE_COOLDOWN
+
+      new_dxy = self.moveEnemies()
+      if new_dxy:
+        dx, dy = new_dxy
+
+    next_enemies = []
+    for e in self.enemies:
+      if e.dead: continue
+      e.dx = dx
+      e.dy = dy
+      next_enemies.append(e)
+
+    self.enemies = next_enemies
+
+  def moveEnemies(self):
+    at_edge = False
+    for e in self.enemies:
+      e.update()
+      if e.x == 0 or e.x == self.display.cols - 1:
+        at_edge = True
+      if e.y >= self.display.rows - 2:
+        self.over = True
+
+    if self.enemyState == EnemyState.RIGHT:
+      if at_edge:
+        self.enemyState = EnemyState.AT_RIGHT_DOWN
+        return 0, 1
+    elif self.enemyState == EnemyState.AT_RIGHT_DOWN:
+      self.enemyState = EnemyState.LEFT
+      return -1, 0
+    elif self.enemyState == EnemyState.LEFT:
+      if at_edge:
+        self.enemyState = EnemyState.AT_LEFT_DOWN
+        return 0, 1
+    elif self.enemyState == EnemyState.AT_LEFT_DOWN:
+      self.enemyState = EnemyState.RIGHT
+      return 1, 0
+    else:
+      raise ValueError("unknown state!")
+
   def updateBullets(self):
     if self.shot_cooldown:
       self.shot_cooldown -= 1
@@ -101,7 +170,19 @@ class Game:
 
     grid = {}
     for p in self.all_bunkers:
-      grid[p.x, p.y] = p.bunk
+      grid[p.x, p.y] = "B", p.bunk
+
+    for e in self.enemies:
+      # Make the hitbox 3 wide
+      for xx in (e.x - 1, e.x, e.x + 1):
+        p = xx, e.y
+        if p in grid:
+          _, bunker = grid[p]
+          if bunker.health:
+            bunker.health -= 1
+          e.dead = True
+          continue
+        grid[p] = "E", e
 
     next_bullets = []
     for b in self.bullets:
@@ -111,10 +192,18 @@ class Game:
 
       p = b.x, b.y
       if p in grid:
-        bunker = grid[p]
-        bunker.health -= 1
+        kind, o = grid[p]
+        if kind == 'B':
+          if o.health:
+            o.health -= 1
+        elif kind == 'E':
+          o.dead = True
+        else:
+          raise ValueError(f"Unknown kind {kind}")
         continue
 
       next_bullets.append(b)
+
+    # TODO collisions of enemy or bomb with player?
 
     self.bullets = next_bullets

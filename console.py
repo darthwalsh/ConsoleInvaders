@@ -11,6 +11,9 @@ class Console:
     for b in world.all_bunkers:
       self.draw_pos(b, str(b.bunk.health))
 
+    for e in world.enemies:
+      self.draw_pos(e, '!')
+
     for b in world.bullets:
       self.draw_pos(b, '^')
 
