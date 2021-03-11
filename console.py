@@ -11,6 +11,9 @@ class Console:
     for b in world.all_bunkers:
       self.draw_pos(b, str(b.bunk.health))
 
+    for b in world.bombs:
+      self.draw_pos(b, 'o')
+
     for e in world.enemies:
       self.draw_pos(e, '!')
 
@@ -27,10 +30,12 @@ class Console:
       curses.resizeterm(self.rows, self.cols)
 
   def draw_pos(self, p, c):
-    if 0 <= p.y < self.rows and 0 <= p.x < self.cols:
+    try:
       self.screen.addch(p.y, p.x, c)
-    else:
-      raise ValueError(f"{p} is out of bounds {self.rows},{self.cols}")
+    except curses.error as e:
+      if 0 <= p.y < self.rows and 0 <= p.x < self.cols:
+        return
+      raise ValueError(f"{p} was out of bounds {self.cols},{self.rows}", e)
 
   def __enter__(self):
     self.screen = curses.initscr()
