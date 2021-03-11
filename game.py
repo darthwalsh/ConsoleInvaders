@@ -3,12 +3,14 @@ import time
 from enum import Enum
 
 FPS = 30
-INITIAL_HEALTH = 9
+BUNKER_INITIAL_HEALTH = 9
+BUNKER_DAMAGE_CHANCE = 0.3
 SHOT_COOLDOWN = 6
 ENEMY_MOVE_COOLDOWN = 2
 BOMB_CHANCE = 0.01
 
 class Pos:
+
   def __init__(self, x=0, y=0):
     self.x = x
     self.y = y
@@ -35,6 +37,7 @@ class EnemyState(Enum):
   AT_LEFT_DOWN = 4
 
 class Game:
+
   def __init__(self, display, controls):
     self.display = display
     self.controls = controls
@@ -45,11 +48,12 @@ class Game:
 
     self.bunkers = [Pos(-1, self.bunker_min_y() - 5) for _ in range(4)]
     for b in self.bunkers:
-      b.health = INITIAL_HEALTH
+      b.health = BUNKER_INITIAL_HEALTH
 
-    self.enemies: list[Pos] = [Pos(x, y)
-      for x in range(0, self.display.cols - 4, 8)
-      for y in range(0, self.ship_min_y() - 2, 6)]
+    self.enemies: list[Pos] = [
+        Pos(x, y) for x in range(0, self.display.cols - 4, 8) for y in range(0,
+                                                                             self.bunker_min_y() - 2, 6)
+    ]
     for e in self.enemies:
       e.dead = False
       e.dx = 1
@@ -105,16 +109,25 @@ class Game:
     self.all_bunkers = []
     for x in range(0, self.display.cols):
       i = 9 * x // self.display.cols
-      if i % 2 == 0: continue
+      if i % 2 == 0:
+        continue
       i //= 2
 
       bunker = self.bunkers[i]
-      if bunker.health <= 0: continue
+      if bunker.health <= 0:
+        continue
 
       for y in range(self.bunker_min_y(), self.ship_min_y()):
         p = Pos(x, y)
         p.bunk = bunker
         self.all_bunkers.append(p)
+
+  def damage_bunker(self, bunker):
+    if not bunker.health:
+      return
+
+    if random.random() < BUNKER_DAMAGE_CHANCE:
+      bunker.health -= 1
 
   def updateEnemies(self):
     dx, dy = self.enemies[0].dx, self.enemies[0].dy
@@ -130,7 +143,8 @@ class Game:
 
     next_enemies = []
     for e in self.enemies:
-      if e.dead: continue
+      if e.dead:
+        continue
       e.dx = dx
       e.dy = dy
       next_enemies.append(e)
@@ -188,8 +202,7 @@ class Game:
         p = xx, e.y
         if p in grid:
           _, bunker = grid[p]
-          if bunker.health:
-            bunker.health -= 1
+          self.damage_bunker(bunker)
           e.dead = True
           continue
         grid[p] = "E", e
@@ -200,13 +213,13 @@ class Game:
     for b in self.bullets:
       b.update()
 
-      if b.y < 0: continue
+      if b.y < 0:
+        continue
 
       if b.xy() in grid:
         kind, o = grid[b.xy()]
         if kind == 'B':
-          if o.health:
-            o.health -= 1
+          self.damage_bunker(o)
         elif kind == 'E':
           o.dead = True
         elif kind == 'P':
@@ -222,13 +235,13 @@ class Game:
     for b in self.bombs:
       b.update()
 
-      if b.y >= self.display.rows: continue
+      if b.y >= self.display.rows:
+        continue
 
       if b.xy() in grid:
         kind, o = grid[b.xy()]
         if kind == 'B':
-          if o.health:
-            o.health -= 1
+          self.damage_bunker(o)
         elif kind == 'E':
           next_bombs.append(b)
         elif kind == 'P':
