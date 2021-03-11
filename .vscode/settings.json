@@ -1,2 +1,9 @@
 {
+  "cSpell.words": [
+    "addch",
+    "cbreak",
+    "getmaxyx",
+    "nocbreak",
+    "noecho"
+  ]
 }
