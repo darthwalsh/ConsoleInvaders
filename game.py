@@ -1,10 +1,12 @@
+import random
 import time
 from enum import Enum
 
-FPS = 60
+FPS = 30
 INITIAL_HEALTH = 9
 SHOT_COOLDOWN = 6
 ENEMY_MOVE_COOLDOWN = 2
+BOMB_CHANCE = 0.01
 
 class Pos:
   def __init__(self, x=0, y=0):
@@ -16,6 +18,9 @@ class Pos:
   def update(self):
     self.x += self.dx
     self.y += self.dy
+
+  def xy(self):
+    return self.x, self.y
 
   def __repr__(self):
     xy = f"{self.x},{self.y}"
@@ -38,7 +43,7 @@ class Game:
     self.ship = Pos(display.cols // 2, self.ship_min_y())
     self.shot_cooldown = 0
 
-    self.bunkers = [Pos(-1, self.ship_min_y() - 1) for _ in range(4)]
+    self.bunkers = [Pos(-1, self.bunker_min_y() - 5) for _ in range(4)]
     for b in self.bunkers:
       b.health = INITIAL_HEALTH
 
@@ -50,6 +55,8 @@ class Game:
       e.dx = 1
     self.enemy_move_cooldown = 0
     self.enemyState = EnemyState.RIGHT
+
+    self.bombs: list[Pos] = []
 
     self.bullets: list[Pos] = []
 
@@ -128,6 +135,11 @@ class Game:
       e.dy = dy
       next_enemies.append(e)
 
+      if random.random() < BOMB_CHANCE:
+        bomb = Pos(*e.xy())
+        bomb.dy = 1
+        self.bombs.append(bomb)
+
     self.enemies = next_enemies
 
   def moveEnemies(self):
@@ -162,15 +174,13 @@ class Game:
     elif self.controls.fire():
       self.shot_cooldown = SHOT_COOLDOWN
 
-      shot = Pos()
-      shot.x = self.ship.x
-      shot.y = self.ship.y
+      shot = Pos(*self.ship.xy())
       shot.dy = -1
       self.bullets.append(shot)
 
     grid = {}
     for p in self.all_bunkers:
-      grid[p.x, p.y] = "B", p.bunk
+      grid[p.xy()] = "B", p.bunk
 
     for e in self.enemies:
       # Make the hitbox 3 wide
@@ -184,26 +194,47 @@ class Game:
           continue
         grid[p] = "E", e
 
+    grid[self.ship.xy()] = "P", self.ship
+
     next_bullets = []
     for b in self.bullets:
       b.update()
 
       if b.y < 0: continue
 
-      p = b.x, b.y
-      if p in grid:
-        kind, o = grid[p]
+      if b.xy() in grid:
+        kind, o = grid[b.xy()]
         if kind == 'B':
           if o.health:
             o.health -= 1
         elif kind == 'E':
           o.dead = True
+        elif kind == 'P':
+          pass
         else:
           raise ValueError(f"Unknown kind {kind}")
         continue
 
       next_bullets.append(b)
-
-    # TODO collisions of enemy or bomb with player?
-
     self.bullets = next_bullets
+
+    next_bombs = []
+    for b in self.bombs:
+      b.update()
+
+      if b.y >= self.display.rows: continue
+
+      if b.xy() in grid:
+        kind, o = grid[b.xy()]
+        if kind == 'B':
+          if o.health:
+            o.health -= 1
+        elif kind == 'E':
+          next_bombs.append(b)
+        elif kind == 'P':
+          self.over = True
+        else:
+          raise ValueError(f"Unknown kind {kind}")
+        continue
+      next_bombs.append(b)
+    self.bombs = next_bombs
